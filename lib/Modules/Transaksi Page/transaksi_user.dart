@@ -165,10 +165,7 @@ class _TransaksiUserState extends State<TransaksiUser> {
                                     style: TextStyle(color: Colors.red),
                                   )
                                 : Text('Rp${product['harga']}'),
-                            trailing: 
-                            !canManageTransactions 
-                                ? null
-                                :
+                            trailing:                             
                             product['aktif'] == 0
                                 ? null
                                 : IconButton(

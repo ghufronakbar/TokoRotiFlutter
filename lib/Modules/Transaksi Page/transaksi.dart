@@ -140,17 +140,8 @@ class _TransaksiState extends State<Transaksi> {
                           margin: EdgeInsets.symmetric(vertical: 4.0),
                           child: ListTile(
                             title: Text(product['nama_barang']),
-                            subtitle: product['aktif'] == 0
-                                ? const Text(
-                                    'Produk tidak aktif',
-                                    style: TextStyle(color: Colors.red),
-                                  )
-                                : Text('Rp${product['harga']}'),
-                            trailing: !canManageTransactions
-                                ? null
-                                : product['aktif'] == 0
-                                    ? null
-                                    : IconButton(
+                            subtitle: Text('Rp${product['harga']}'),
+                            trailing: IconButton(
                                         icon: Icon(Icons.add),
                                         onPressed: () {
                                           addToCart(product);
