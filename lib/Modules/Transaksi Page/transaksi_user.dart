@@ -165,8 +165,7 @@ class _TransaksiUserState extends State<TransaksiUser> {
                                     style: TextStyle(color: Colors.red),
                                   )
                                 : Text('Rp${product['harga']}'),
-                            trailing:                             
-                            product['aktif'] == 0
+                            trailing: product['aktif'] == 0
                                 ? null
                                 : IconButton(
                                     icon: Icon(Icons.add),
@@ -244,7 +243,7 @@ class _TransaksiUserState extends State<TransaksiUser> {
                       ],
                     ),
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   Center(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -334,6 +333,19 @@ class _TransaksiUserState extends State<TransaksiUser> {
                         }
                       },
                       child: Text('Checkout'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.greenAccent[400],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () async {},
+                      child: Text('Metode Pembayaran'),
                     ),
                   ),
                   SizedBox(height: 20),
