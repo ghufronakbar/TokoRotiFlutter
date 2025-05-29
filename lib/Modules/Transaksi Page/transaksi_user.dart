@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:toko_roti/Modules/Transaksi%20Page/qris_page.dart';
 import 'package:toko_roti/Services/api_services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -112,6 +113,104 @@ class _TransaksiUserState extends State<TransaksiUser> {
               .contains(searchQuery.toLowerCase()) ||
           product['id_barang'].toString() == searchQuery;
     }).toList();
+
+    Future<void> onCheckout(String method) async {
+      if (cart.isEmpty) {
+        // Tampilkan pesan error jika keranjang kosong
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Keranjang Kosong'),
+            content: Text(
+                'Silakan tambahkan produk ke keranjang sebelum melakukan checkout.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      final transaction = {
+        'transaction_id': transactionCode,
+        'transaction_date': DateTime.now().toIso8601String(),
+        'total_price': subtotal,
+        'payment_method': method,
+        'produk': cart.entries
+            .map((entry) => {
+                  'id_barang': entry.key['id_barang'],
+                  'quantity': entry.value,
+                  'harga': entry.key['harga'],
+                })
+            .toList(),
+      };
+
+      try {
+        final result = await _apiService.createTransaction(transaction);
+        // Tampilkan dialog sukses jika transaksi berhasil disimpan
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Checkout Berhasil'),
+            content: Text(
+                'Total yang harus dibayarkan: Rp${subtotal.toStringAsFixed(2)}'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  if (method != "qris") {
+                    setState(() {
+                      cart.clear();
+                      transactionCode = generateTransactionCode();
+                    });
+                  }
+                  Navigator.of(context).pop();
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+        print("Method: $method");
+        if (method == "qris") {          
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => QRISPage(
+                subtotal: result['transaction']['total_price'] as double,
+                transactionCode: transaction['transaction_id'] as String,
+              ),
+            ),
+          );
+          setState(() {
+            cart.clear();
+            transactionCode = generateTransactionCode();
+          });
+        }
+      } catch (e) {
+        // Tampilkan dialog error jika transaksi gagal disimpan
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Checkout Gagal'),
+            content: Text(
+                'Terjadi kesalahan saat menyimpan transaksi. Silakan coba lagi.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -253,84 +352,7 @@ class _TransaksiUserState extends State<TransaksiUser> {
                         ),
                       ),
                       onPressed: () async {
-                        if (cart.isEmpty) {
-                          // Tampilkan pesan error jika keranjang kosong
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text('Keranjang Kosong'),
-                              content: Text(
-                                  'Silakan tambahkan produk ke keranjang sebelum melakukan checkout.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: Text('OK'),
-                                ),
-                              ],
-                            ),
-                          );
-                          return;
-                        }
-
-                        final transaction = {
-                          'transaction_id': transactionCode,
-                          'transaction_date': DateTime.now().toIso8601String(),
-                          'total_price': subtotal,
-                          'produk': cart.entries
-                              .map((entry) => {
-                                    'id_barang': entry.key['id_barang'],
-                                    'quantity': entry.value,
-                                    'harga': entry.key['harga'],
-                                  })
-                              .toList(),
-                        };
-
-                        try {
-                          final result =
-                              await _apiService.createTransaction(transaction);
-                          // Tampilkan dialog sukses jika transaksi berhasil disimpan
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text('Checkout Berhasil'),
-                              content: Text(
-                                  'Total yang harus dibayarkan: Rp${subtotal.toStringAsFixed(2)}'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      cart.clear();
-                                      transactionCode =
-                                          generateTransactionCode();
-                                    });
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: Text('OK'),
-                                ),
-                              ],
-                            ),
-                          );
-                        } catch (e) {
-                          // Tampilkan dialog error jika transaksi gagal disimpan
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text('Checkout Gagal'),
-                              content: Text(
-                                  'Terjadi kesalahan saat menyimpan transaksi. Silakan coba lagi.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: Text('OK'),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
+                        await onCheckout("cash");
                       },
                       child: Text('Checkout'),
                     ),
@@ -344,7 +366,9 @@ class _TransaksiUserState extends State<TransaksiUser> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      onPressed: () async {},
+                      onPressed: () async {
+                        await onCheckout("qris");
+                      },
                       child: Text('Metode Pembayaran'),
                     ),
                   ),
